@@ -18,7 +18,8 @@ under `civ2-player:` ids.
   seated, each start is scored for room (the nearest start on its land mass, or the land mass's size when alone),
   rivers or Grassland among its 21 squares, and its land mass's size. A start more than 3 short of the best gets an
   extra Settlers (a person on Deity always does), and then an advance for each point it is still short, picked as the
-  game picks research (`civ2-science`'s `pickResearch`).
+  game picks research (`civ2-science`'s `pickResearch`), with every civilization still counting the 1 advance it is
+  placed with. If the balancing fails (a start on no land mass), the error is logged and the game starts anyway.
 
 Not here yet: the balancing's multiplayer-Deity Settlers; `advanceValue`'s unit, tribe and city terms (see
 `civ2-science`); and the advances it gives count towards the advances gained, which Civ2 doesn't count before the

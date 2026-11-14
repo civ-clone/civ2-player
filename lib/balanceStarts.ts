@@ -1,3 +1,4 @@
+import { STARTING_NUMBER_OF_ADVANCES } from '@civ-clone/civ2-science/Rules/Research/cost';
 import { StartSite, startBonuses, startScores } from './startBalance';
 import {
   advanceAt,
@@ -48,20 +49,30 @@ export const civilizeOf = (player: Player): number => {
     : 0;
 };
 
+/** A start square that is on none of the world's land masses: the balancing can't score it. */
+export class StartNotOnLandError extends Error {}
+
 /** The start's site: its land mass and what a city there would work. */
 export const siteOf = (
   tile: Tile,
   world: World,
   terrainFeatureRegistry: TerrainFeatureRegistry
 ): StartSite => {
-  const landMass =
-      world.landMasses().find((candidate) => candidate.hasTile(tile)) ?? null,
+  const landMass = world
+      .landMasses()
+      .find((candidate) => candidate.hasTile(tile)),
     squares = fatCross(tile).entries();
+
+  if (!landMass) {
+    throw new StartNotOnLandError(
+      `The start at ${tile.x()}, ${tile.y()} is on none of the world's land masses.`
+    );
+  }
 
   return {
     tile,
     landMass,
-    landMassSquares: landMass === null ? 0 : landMass.tiles().length,
+    landMassSquares: landMass.tiles().length,
     grassland: squares.filter((square) => square.terrain() instanceof Grassland)
       .length,
     rivers: squares.filter((square) =>
@@ -75,7 +86,8 @@ export const siteOf = (
 /**
  * Evens up the starts in `starts` (each player and the square it was seated on, in seating order): an extra Settlers
  * on the start square, then each free advance picked as the game picks research before the first turn
- * (`civ_research_complete` → `civ_pick_research_advance`, with no advances counted as gained yet).
+ * (`civ_research_complete` → `civ_pick_research_advance`). Every civilization's `num_advances` is still the 1 it is
+ * placed with: advances given before the first turn aren't counted.
  */
 export const balanceStarts = (
   starts: [Player, Tile][],
@@ -126,7 +138,7 @@ export const balanceStarts = (
         picked = pickResearch({
           candidates: researchCandidates((index) => known.has(index)),
           human: humans[position],
-          numberOfAdvances: 0,
+          numberOfAdvances: STARTING_NUMBER_OF_ADVANCES,
           level,
           value: advanceValue({
             civilize: civilizeOf(player),

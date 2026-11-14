@@ -20,7 +20,10 @@ import Tile from '@civ-clone/core-world/Tile';
 import UnitRegistry from '@civ-clone/core-unit/UnitRegistry';
 import World from '@civ-clone/core-world/World';
 import { advances } from '@civ-clone/civ2-science/data/advances';
-import balanceStarts, { siteOf } from '../lib/balanceStarts';
+import balanceStarts, {
+  StartNotOnLandError,
+  siteOf,
+} from '../lib/balanceStarts';
 import Built from '@civ-clone/core-world/Rules/Built';
 import CivilizationRegistry from '@civ-clone/core-civilization/CivilizationRegistry';
 import Engine from '@civ-clone/core-engine/Engine';
@@ -304,5 +307,85 @@ describe('balanceStarts', (): void => {
       expect(playerResearchRegistry.getByPlayer(player).complete()).length(2);
     });
     expect(playerResearchRegistry.getByPlayer(players[0]).complete()).length(0);
+  });
+
+  it('refuses a start on none of the land masses', async (): Promise<void> => {
+    const ruleRegistry = new RuleRegistry(),
+      world = new World(
+        new Generator(10, 10, () => new Ocean(ruleRegistry), {
+          topologyId: 'staggered-iso',
+        } as any),
+        ruleRegistry,
+        new LandMassRegistry()
+      );
+
+    await world.build();
+
+    expect(() =>
+      siteOf(world.get(4, 4), world, new TerrainFeatureRegistry())
+    ).throw(StartNotOnLandError);
+  });
+
+  it('still starts the game, and reports why, when the balancing fails', async (): Promise<void> => {
+    const ruleRegistry = new RuleRegistry(),
+      clientRegistry = new ClientRegistry(),
+      civilizationRegistry = new CivilizationRegistry(),
+      leaderRegistry = new LeaderRegistry(),
+      engine = new Engine(),
+      startTiles = new StartTiles(),
+      started: Promise<void> = new Promise((resolve) =>
+        engine.on('game:start', resolve)
+      ),
+      world = new World(
+        new Generator(10, 10, () => new Ocean(ruleRegistry), {
+          topologyId: 'staggered-iso',
+        } as any),
+        ruleRegistry,
+        new LandMassRegistry()
+      ),
+      player = new Player(ruleRegistry),
+      civilization = new Babylonian(),
+      reported: unknown[] = [],
+      consoleError = console.error;
+
+    civilization.setLeader(new Hammurabi());
+    player.setCivilization(civilization);
+    clientRegistry.register(new AIClient(player));
+
+    ruleRegistry.register(
+      ...built(
+        civilizationRegistry,
+        clientRegistry,
+        engine,
+        new PlayerRegistry(),
+        new PlayerWorldRegistry(),
+        ruleRegistry,
+        leaderRegistry,
+        undefined,
+        undefined,
+        undefined,
+        startTiles,
+        new PlayerResearchRegistry(),
+        new GameDifficultyRegistry(),
+        new TerrainFeatureRegistry(),
+        () => 0.5
+      ),
+      ...spawn(ruleRegistry, startTiles),
+      // An ocean square: no land mass, so the balancing throws.
+      new PickStartTile(new Effect((pickFrom: World) => pickFrom.get(4, 4)))
+    );
+
+    console.error = (...args: unknown[]): void => {
+      reported.push(...args);
+    };
+
+    try {
+      await world.build();
+      await started;
+    } finally {
+      console.error = consoleError;
+    }
+
+    expect(reported.some((item) => item instanceof StartNotOnLandError)).true;
   });
 });

@@ -107,14 +107,19 @@ export const getRules = (
         ruleRegistry
       ).then((): void => {
         // Civilization II's start balancing (`lib/startBalance`), once everyone is seated and before the first turn.
-        balanceStarts(startTiles.take(), world, {
-          clientRegistry,
-          gameDifficultyRegistry,
-          playerResearchRegistry,
-          ruleRegistry,
-          terrainFeatureRegistry,
-          randomNumberGenerator,
-        });
+        //  The game starts whatever happens to it: a balancing that fails is reported, and skipped.
+        try {
+          balanceStarts(startTiles.take(), world, {
+            clientRegistry,
+            gameDifficultyRegistry,
+            playerResearchRegistry,
+            ruleRegistry,
+            terrainFeatureRegistry,
+            randomNumberGenerator,
+          });
+        } catch (error) {
+          console.error('civ2-player: the start balancing failed.', error);
+        }
 
         engine.emit('game:start');
       });
