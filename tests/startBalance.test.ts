@@ -20,7 +20,21 @@ import Tile from '@civ-clone/core-world/Tile';
 import UnitRegistry from '@civ-clone/core-unit/UnitRegistry';
 import World from '@civ-clone/core-world/World';
 import { advances } from '@civ-clone/civ2-science/data/advances';
-import balanceStarts from '../lib/balanceStarts';
+import balanceStarts, { siteOf } from '../lib/balanceStarts';
+import Built from '@civ-clone/core-world/Rules/Built';
+import CivilizationRegistry from '@civ-clone/core-civilization/CivilizationRegistry';
+import Engine from '@civ-clone/core-engine/Engine';
+import Hammurabi from '@civ-clone/base-civilization-babylonian/Leaders/Hammurabi';
+import LandMassRegistry from '@civ-clone/core-world/LandMassRegistry';
+import LeaderRegistry from '@civ-clone/core-civilization/LeaderRegistry';
+import Ocean from '@civ-clone/base-terrain-ocean/Ocean';
+import PickStartTile from '@civ-clone/core-world-generator/Rules/PickStartTile';
+import PlayerRegistry from '@civ-clone/core-player/PlayerRegistry';
+import PlayerWorldRegistry from '@civ-clone/core-player-world/PlayerWorldRegistry';
+import Settlers from '@civ-clone/base-unit-settlers/Settlers';
+import StartTiles from '../lib/startTiles';
+import built from '../Rules/World/built';
+import spawn from '../Rules/Player/spawn';
 import { expect } from 'chai';
 import fatCross from '@civ-clone/base-city-tiles-fat-cross/lib/fatCross';
 
@@ -156,6 +170,16 @@ describe('balanceStarts', (): void => {
       }
     );
 
+    expect(siteOf(rich, world, terrainFeatureRegistry)).include({
+      landMassSquares: 400,
+      grassland: 21,
+      rivers: 21,
+    });
+    expect(siteOf(poor, world, terrainFeatureRegistry)).include({
+      landMassSquares: 400,
+      grassland: 21,
+      rivers: 0,
+    });
     expect(unitRegistry.getByPlayer(players[0])).length(0);
     expect(unitRegistry.getByPlayer(players[1])).length(0);
     expect(playerResearchRegistry.getByPlayer(players[0]).complete()).length(0);
@@ -168,5 +192,117 @@ describe('balanceStarts', (): void => {
       row = advances.find(([AdvanceType]) => first instanceof AdvanceType)!;
 
     expect([row[1], row[2]]).eql([-1, -1]);
+  });
+
+  it('balances as the world is built and the players seated, across land masses', async (): Promise<void> => {
+    const ruleRegistry = new RuleRegistry(),
+      terrainFeatureRegistry = new TerrainFeatureRegistry(),
+      unitRegistry = new UnitRegistry(),
+      clientRegistry = new ClientRegistry(),
+      playerResearchRegistry = new PlayerResearchRegistry(),
+      advanceRegistry = new AdvanceRegistry(),
+      civilizationRegistry = new CivilizationRegistry(),
+      leaderRegistry = new LeaderRegistry(),
+      engine = new Engine(),
+      startTiles = new StartTiles(),
+      started: Promise<void> = new Promise((resolve) =>
+        engine.on('game:start', resolve)
+      ),
+      // 20 × 20, with ocean in columns 0 and 10: two land masses of 180 squares.
+      world = new World(
+        new Generator(
+          20,
+          20,
+          (i: number) =>
+            i % 20 === 0 || i % 20 === 10
+              ? new Ocean(ruleRegistry)
+              : new Grassland(ruleRegistry),
+          { topologyId: 'staggered-iso' } as any
+        ),
+        ruleRegistry,
+        // Its own: the default registry holds every world's land masses.
+        new LandMassRegistry()
+      ),
+      starts = [
+        [4, 4],
+        [14, 4],
+        [16, 10],
+      ],
+      players = starts.map(() => new Player(ruleRegistry));
+
+    advanceRegistry.register(...advances.map(([AdvanceType]) => AdvanceType));
+    civilizationRegistry.register(Babylonian);
+    leaderRegistry.register(Hammurabi);
+    players.forEach((player) => {
+      clientRegistry.register(new AIClient(player));
+      playerResearchRegistry.register(
+        new PlayerResearch(player, advanceRegistry, ruleRegistry)
+      );
+    });
+
+    let seated = 0;
+
+    ruleRegistry.register(
+      new Created(new Effect((unit) => unitRegistry.register(unit))),
+      // Rivers all round the lone start, before anyone is seated.
+      new Built(
+        new Effect((built: World): void =>
+          fatCross(built.get(4, 4))
+            .entries()
+            .forEach((tile: Tile) =>
+              terrainFeatureRegistry.register(new River(tile.terrain()))
+            )
+        )
+      ),
+      ...built(
+        civilizationRegistry,
+        clientRegistry,
+        engine,
+        new PlayerRegistry(),
+        new PlayerWorldRegistry(),
+        ruleRegistry,
+        leaderRegistry,
+        undefined,
+        undefined,
+        undefined,
+        startTiles,
+        playerResearchRegistry,
+        new GameDifficultyRegistry(),
+        terrainFeatureRegistry,
+        () => 0.5
+      ),
+      ...spawn(ruleRegistry, startTiles),
+      new PickStartTile(
+        new Effect((pickFrom: World) => {
+          const [x, y] = starts[seated++];
+
+          return pickFrom.get(x, y);
+        })
+      )
+    );
+
+    // Every player is chosen as a Babylonian led by Hammurabi before seating, so seating asks nothing.
+    players.forEach((player) => {
+      const civilization = new Babylonian();
+
+      civilization.setLeader(new Hammurabi());
+      player.setCivilization(civilization);
+    });
+
+    await world.build();
+    await started;
+
+    // Alone on 180 squares: 3 (clamped), rivers 4, size 3 = 10. The other two, 5 apart: grassland 2, size 3 = 5.
+    expect(world.landMasses()).length(2);
+    expect(
+      unitRegistry.getByPlayer(players[0]).map((unit) => unit.constructor)
+    ).eql([Settlers]);
+    players.slice(1).forEach((player) => {
+      expect(
+        unitRegistry.getByPlayer(player).map((unit) => unit.constructor)
+      ).eql([Settlers, Settlers]);
+      expect(playerResearchRegistry.getByPlayer(player).complete()).length(2);
+    });
+    expect(playerResearchRegistry.getByPlayer(players[0]).complete()).length(0);
   });
 });
