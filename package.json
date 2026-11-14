@@ -45,7 +45,7 @@
   },
   "dependencies": {
     "@civ-clone/base-civilization-barbarian": "^0.1.1",
-    "@civ-clone/base-player": "github:civ-clone/base-player#feat/shared-player-checks",
+    "@civ-clone/base-player": "^0.1.2",
     "@civ-clone/base-player-action-end-turn": "^0.1.0",
     "@civ-clone/base-terrain-yield-food": "^0.1.0",
     "@civ-clone/base-terrain-yield-production": "^0.1.0",
