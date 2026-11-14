@@ -105,24 +105,33 @@ export const getRules = (
         cityNameRegistry,
         traitRegistry,
         ruleRegistry
-      ).then((): void => {
-        // Civilization II's start balancing (`lib/startBalance`), once everyone is seated and before the first turn.
-        //  The game starts whatever happens to it: a balancing that fails is reported, and skipped.
-        try {
-          balanceStarts(startTiles.take(), world, {
-            clientRegistry,
-            gameDifficultyRegistry,
-            playerResearchRegistry,
-            ruleRegistry,
-            terrainFeatureRegistry,
-            randomNumberGenerator,
-          });
-        } catch (error) {
-          console.error('civ2-player: the start balancing failed.', error);
-        }
+      ).then(
+        (): void => {
+          // Civilization II's start balancing (`lib/startBalance`), once everyone is seated and before the first
+          //  turn. The game starts whatever happens to it: a balancing that fails is reported, and skipped.
+          try {
+            balanceStarts(startTiles.take(), world, {
+              clientRegistry,
+              gameDifficultyRegistry,
+              playerResearchRegistry,
+              ruleRegistry,
+              terrainFeatureRegistry,
+              randomNumberGenerator,
+            });
+          } catch (error) {
+            console.error('civ2-player: the start balancing failed.', error);
+          }
 
-        engine.emit('game:start');
-      });
+          engine.emit('game:start');
+        },
+        // Seating that fails (too few start squares, say) is reported rather than lost in a rejected promise, and the
+        //  game starts with whoever was seated: a game that never starts can't even be saved or left.
+        (error: unknown): void => {
+          console.error('civ2-player: seating the players failed.', error);
+
+          engine.emit('game:start');
+        }
+      );
     })
   ),
   new Built(

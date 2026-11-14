@@ -57,7 +57,7 @@
     "@civ-clone/base-terrain-yield-trade": "^0.1.0",
     "@civ-clone/base-unit-settlers": "^0.1.0",
     "@civ-clone/civ2-difficulty": "github:civ-clone/civ2-difficulty",
-    "@civ-clone/civ2-science": "github:civ-clone/civ2-science#feat/initial",
+    "@civ-clone/civ2-science": "github:civ-clone/civ2-science",
     "@civ-clone/core-city": "^0.1.24",
     "@civ-clone/core-civilization": "^0.1.8",
     "@civ-clone/core-client": "^0.1.4",

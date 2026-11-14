@@ -19,6 +19,7 @@ import TerrainFeatureRegistry from '@civ-clone/core-terrain-feature/TerrainFeatu
 import Tile from '@civ-clone/core-world/Tile';
 import UnitRegistry from '@civ-clone/core-unit/UnitRegistry';
 import World from '@civ-clone/core-world/World';
+import * as Advances from '@civ-clone/civ2-science/Advances';
 import { advances } from '@civ-clone/civ2-science/data/advances';
 import balanceStarts, {
   StartNotOnLandError,
@@ -387,5 +388,138 @@ describe('balanceStarts', (): void => {
     }
 
     expect(reported.some((item) => item instanceof StartNotOnLandError)).true;
+  });
+
+  it("picks a person's free advances as one with 1 advance counted, so no opening choice is hidden", async (): Promise<void> => {
+    const ruleRegistry = new RuleRegistry(),
+      terrainFeatureRegistry = new TerrainFeatureRegistry(),
+      clientRegistry = new ClientRegistry(),
+      playerResearchRegistry = new PlayerResearchRegistry(),
+      advanceRegistry = new AdvanceRegistry(),
+      world = new World(
+        new Generator(20, 20, () => new Grassland(ruleRegistry), {
+          topologyId: 'staggered-iso',
+        } as any),
+        ruleRegistry,
+        new LandMassRegistry()
+      );
+
+    await world.build();
+
+    advanceRegistry.register(...advances.map(([AdvanceType]) => AdvanceType));
+
+    const rich = world.get(4, 4),
+      poor = world.get(14, 14),
+      computer = new Player(ruleRegistry),
+      person = new Player(ruleRegistry);
+
+    fatCross(rich)
+      .entries()
+      .forEach((tile: Tile) =>
+        terrainFeatureRegistry.register(new River(tile.terrain()))
+      );
+
+    [computer, person].forEach((player) => {
+      player.setCivilization(new Babylonian());
+      playerResearchRegistry.register(
+        new PlayerResearch(player, advanceRegistry, ruleRegistry)
+      );
+    });
+    clientRegistry.register(new AIClient(computer), new Client(person));
+
+    // C rand() results 0, 0, 2, 0, 0, 0, 0 in turn: a person scores rand() % 3 + value − 1. With nothing known and
+    //  nobody knowing anything, the openings are worth Alphabet 6, Bronze Working 7, Ceremonial Burial 6, the rest 5.
+    //  With 1 counted all 7 are offered and Ceremonial Burial scores 7, first ahead of Bronze Working's 6. Counted as
+    //  0, Ceremonial Burial and Horseback Riding would be hidden and Bronze Working would win.
+    const results = [0, 0, 2, 0, 0, 0, 0];
+    let draw = 0;
+
+    // The poor start is 2 short (8 against 6): 2 advances for the person.
+    balanceStarts(
+      [
+        [computer, rich],
+        [person, poor],
+      ],
+      world,
+      {
+        clientRegistry,
+        gameDifficultyRegistry: new GameDifficultyRegistry(),
+        playerResearchRegistry,
+        ruleRegistry,
+        terrainFeatureRegistry,
+        randomNumberGenerator: () =>
+          (results[draw++ % results.length] + 0.5) / 32768,
+      }
+    );
+
+    const [first] = playerResearchRegistry.getByPlayer(person).complete();
+
+    expect(playerResearchRegistry.getByPlayer(person).complete()).length(2);
+    expect(first).instanceof(Advances.CeremonialBurial);
+  });
+
+  it('still starts the game, and reports why, when seating fails', async (): Promise<void> => {
+    const ruleRegistry = new RuleRegistry(),
+      clientRegistry = new ClientRegistry(),
+      engine = new Engine(),
+      started: Promise<void> = new Promise((resolve) =>
+        engine.on('game:start', resolve)
+      ),
+      world = new World(
+        new Generator(10, 10, () => new Grassland(ruleRegistry), {
+          topologyId: 'staggered-iso',
+        } as any),
+        ruleRegistry,
+        new LandMassRegistry()
+      ),
+      player = new Player(ruleRegistry),
+      civilization = new Babylonian(),
+      reported: unknown[] = [],
+      consoleError = console.error;
+
+    civilization.setLeader(new Hammurabi());
+    player.setCivilization(civilization);
+    clientRegistry.register(new AIClient(player));
+
+    ruleRegistry.register(
+      ...built(
+        new CivilizationRegistry(),
+        clientRegistry,
+        engine,
+        new PlayerRegistry(),
+        new PlayerWorldRegistry(),
+        ruleRegistry,
+        new LeaderRegistry(),
+        undefined,
+        undefined,
+        undefined,
+        new StartTiles(),
+        new PlayerResearchRegistry(),
+        new GameDifficultyRegistry(),
+        new TerrainFeatureRegistry(),
+        () => 0.5
+      ),
+      // No start square at all.
+      new PickStartTile(new Effect((): undefined => undefined))
+    );
+
+    console.error = (...args: unknown[]): void => {
+      reported.push(...args);
+    };
+
+    try {
+      await world.build();
+      await started;
+    } finally {
+      console.error = consoleError;
+    }
+
+    expect(
+      reported.some(
+        (item) =>
+          item instanceof TypeError &&
+          /startingSquare/.test((item as Error).message)
+      )
+    ).true;
   });
 });

@@ -30,8 +30,8 @@ const getRules = (civilizationRegistry = CivilizationRegistry_1.instance, client
         // Each player is seated on the square the world's `PickStartTile` rule picks. Civ1's packages also rank the
         //  start squares and emit them as `world:start-tiles`, which nothing listens to, so that is left out here.
         (0, seatPlayers_1.default)(world, clientRegistry, civilizationRegistry, leaderRegistry, attributeRegistry, cityNameRegistry, traitRegistry, ruleRegistry).then(() => {
-            // Civilization II's start balancing (`lib/startBalance`), once everyone is seated and before the first turn.
-            //  The game starts whatever happens to it: a balancing that fails is reported, and skipped.
+            // Civilization II's start balancing (`lib/startBalance`), once everyone is seated and before the first
+            //  turn. The game starts whatever happens to it: a balancing that fails is reported, and skipped.
             try {
                 (0, balanceStarts_1.default)(startTiles.take(), world, {
                     clientRegistry,
@@ -45,6 +45,12 @@ const getRules = (civilizationRegistry = CivilizationRegistry_1.instance, client
             catch (error) {
                 console.error('civ2-player: the start balancing failed.', error);
             }
+            engine.emit('game:start');
+        }, 
+        // Seating that fails (too few start squares, say) is reported rather than lost in a rejected promise, and the
+        //  game starts with whoever was seated: a game that never starts can't even be saved or left.
+        (error) => {
+            console.error('civ2-player: seating the players failed.', error);
             engine.emit('game:start');
         });
     })),
