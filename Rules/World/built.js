@@ -11,11 +11,17 @@ const PlayerRegistry_1 = require("@civ-clone/core-player/PlayerRegistry");
 const PlayerWorldRegistry_1 = require("@civ-clone/core-player-world/PlayerWorldRegistry");
 const RuleRegistry_1 = require("@civ-clone/core-rule/RuleRegistry");
 const TraitRegistry_1 = require("@civ-clone/core-civilization/TraitRegistry");
+const GameDifficultyRegistry_1 = require("@civ-clone/core-difficulty/GameDifficultyRegistry");
+const PlayerResearchRegistry_1 = require("@civ-clone/core-science/PlayerResearchRegistry");
+const startTiles_1 = require("../../lib/startTiles");
+const TerrainFeatureRegistry_1 = require("@civ-clone/core-terrain-feature/TerrainFeatureRegistry");
 const Built_1 = require("@civ-clone/core-world/Rules/Built");
 const Effect_1 = require("@civ-clone/core-rule/Effect");
 const PlayerWorld_1 = require("@civ-clone/core-player-world/PlayerWorld");
+const balanceStarts_1 = require("../../lib/balanceStarts");
+const core_random_1 = require("@civ-clone/core-random");
 const seatPlayers_1 = require("@civ-clone/base-player/lib/seatPlayers");
-const getRules = (civilizationRegistry = CivilizationRegistry_1.instance, clientRegistry = ClientRegistry_1.instance, engine = Engine_1.instance, playerRegistry = PlayerRegistry_1.instance, playerWorldRegistry = PlayerWorldRegistry_1.instance, ruleRegistry = RuleRegistry_1.instance, leaderRegistry = LeaderRegistry_1.instance, attributeRegistry = AttributeRegistry_1.instance, cityNameRegistry = CityNameRegistry_1.instance, traitRegistry = TraitRegistry_1.instance) => [
+const getRules = (civilizationRegistry = CivilizationRegistry_1.instance, clientRegistry = ClientRegistry_1.instance, engine = Engine_1.instance, playerRegistry = PlayerRegistry_1.instance, playerWorldRegistry = PlayerWorldRegistry_1.instance, ruleRegistry = RuleRegistry_1.instance, leaderRegistry = LeaderRegistry_1.instance, attributeRegistry = AttributeRegistry_1.instance, cityNameRegistry = CityNameRegistry_1.instance, traitRegistry = TraitRegistry_1.instance, startTiles = startTiles_1.instance, playerResearchRegistry = PlayerResearchRegistry_1.instance, gameDifficultyRegistry = GameDifficultyRegistry_1.instance, terrainFeatureRegistry = TerrainFeatureRegistry_1.instance, randomNumberGenerator = core_random_1.instance) => [
     new Built_1.default('civ2-player:world/built/register-player-worlds', new Effect_1.default((world) => playerRegistry
         .entries()
         .forEach((player) => playerWorldRegistry.register(new PlayerWorld_1.default(player, world))))),
@@ -23,7 +29,30 @@ const getRules = (civilizationRegistry = CivilizationRegistry_1.instance, client
         engine.emit('world:generate-start-tiles');
         // Each player is seated on the square the world's `PickStartTile` rule picks. Civ1's packages also rank the
         //  start squares and emit them as `world:start-tiles`, which nothing listens to, so that is left out here.
-        (0, seatPlayers_1.default)(world, clientRegistry, civilizationRegistry, leaderRegistry, attributeRegistry, cityNameRegistry, traitRegistry, ruleRegistry).then(() => engine.emit('game:start'));
+        (0, seatPlayers_1.default)(world, clientRegistry, civilizationRegistry, leaderRegistry, attributeRegistry, cityNameRegistry, traitRegistry, ruleRegistry).then(() => {
+            // Civilization II's start balancing (`lib/startBalance`), once everyone is seated and before the first
+            //  turn. The game starts whatever happens to it: a balancing that fails is reported, and skipped.
+            try {
+                (0, balanceStarts_1.default)(startTiles.take(), world, {
+                    clientRegistry,
+                    gameDifficultyRegistry,
+                    playerResearchRegistry,
+                    ruleRegistry,
+                    terrainFeatureRegistry,
+                    randomNumberGenerator,
+                });
+            }
+            catch (error) {
+                console.error('civ2-player: the start balancing failed.', error);
+            }
+            engine.emit('game:start');
+        }, 
+        // Seating that fails (too few start squares, say) is reported rather than lost in a rejected promise, and the
+        //  game starts with whoever was seated: a game that never starts can't even be saved or left.
+        (error) => {
+            console.error('civ2-player: seating the players failed.', error);
+            engine.emit('game:start');
+        });
     })),
     new Built_1.default('civ2-player:world/built/emit', new Effect_1.default((world) => {
         engine.emit('world:built', world);

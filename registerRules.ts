@@ -13,8 +13,11 @@ import unitDestroyed from './Rules/Unit/destroyed';
 import unitVisibility from './Rules/Unit/visibility';
 import worldBuilt from './Rules/World/built';
 import { Game, defaultGame } from '@civ-clone/core-game';
+import StartTiles from './lib/startTiles';
 
-export const register = (game: Game): void =>
+export const register = (game: Game): void => {
+  const startTiles = new StartTiles();
+
   game.rules.register(
     ...cityCaptured(
       game.cities,
@@ -39,7 +42,7 @@ export const register = (game: Game): void =>
       game.units,
       game.engine
     ),
-    ...playerSpawn(game.rules),
+    ...playerSpawn(game.rules, startTiles),
     ...playerTurnStart(game.rules, game.cities, game.units),
     ...playerVisibilityChanged(game.engine),
     ...tileImprovementBuilt(game.players, game.playerWorlds),
@@ -63,9 +66,15 @@ export const register = (game: Game): void =>
       game.leaders,
       game.attributes,
       game.cityNames,
-      game.traits
+      game.traits,
+      startTiles,
+      game.playerResearch,
+      game.difficulty,
+      game.terrainFeatures,
+      game.rng
     )
   );
+};
 
 // The plugin loader imports each package for this side effect. Until it passes
 // a `Game` of its own, dropping it would produce a game with silently absent
