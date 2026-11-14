@@ -1,6 +1,6 @@
 {
   "name": "@civ-clone/civ2-player",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "description": "Civilization II's player lifecycle: joining, being seated with one Settlers, the start balancing, taking turns, seeing tiles and being defeated, on base-player.",
   "main": "index.js",
   "repository": "git@github.com:civ-clone/civ2-player.git",
