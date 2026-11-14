@@ -1,0 +1,19 @@
+import {
+  Engine,
+  instance as engineInstance,
+} from '@civ-clone/core-engine/Engine';
+import Added from '@civ-clone/core-player/Rules/Added';
+import Effect from '@civ-clone/core-rule/Effect';
+import Player from '@civ-clone/core-player/Player';
+import { emitAdded } from '@civ-clone/base-player/lib/events';
+
+export const getRules = (engine: Engine = engineInstance): Added[] => [
+  new Added(
+    'civ2-player:player/added/emit',
+    new Effect((player: Player): void => {
+      emitAdded(player, engine);
+    })
+  ),
+];
+
+export default getRules;
