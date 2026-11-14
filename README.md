@@ -14,5 +14,12 @@ under `civ2-player:` ids.
 - **Defeat:** a computer player is out once it has no cities, and a person once they have no cities and no unit that
   founds cities. Barbarians are never defeated. A defeated player stops moving, leaves the game and loses its units.
 
-Not here yet: Civ2's start balancing (`game.cpp` `game_balance_start_positions`), which gives civilizations with a
-poorer start an extra Settlers or free advances. It needs Civ2's advances.
+- **Start balancing** (`lib/startBalance`, OpenCiv2 `game.cpp` `game_balance_start_positions`): once everyone is
+  seated, each start is scored for room (the nearest start on its land mass, or the land mass's size when alone),
+  rivers or Grassland among its 21 squares, and its land mass's size. A start more than 3 short of the best gets an
+  extra Settlers (a person on Deity always does), and then an advance for each point it is still short, picked as the
+  game picks research (`civ2-science`'s `pickResearch`).
+
+Not here yet: the balancing's multiplayer-Deity Settlers; `advanceValue`'s unit, tribe and city terms (see
+`civ2-science`); and the advances it gives count towards the advances gained, which Civ2 doesn't count before the
+first turn.

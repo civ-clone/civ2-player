@@ -38,11 +38,28 @@ import {
   TraitRegistry,
   instance as traitRegistryInstance,
 } from '@civ-clone/core-civilization/TraitRegistry';
+import {
+  GameDifficultyRegistry,
+  instance as gameDifficultyRegistryInstance,
+} from '@civ-clone/core-difficulty/GameDifficultyRegistry';
+import {
+  PlayerResearchRegistry,
+  instance as playerResearchRegistryInstance,
+} from '@civ-clone/core-science/PlayerResearchRegistry';
+import StartTiles, {
+  instance as startTilesInstance,
+} from '../../lib/startTiles';
+import {
+  TerrainFeatureRegistry,
+  instance as terrainFeatureRegistryInstance,
+} from '@civ-clone/core-terrain-feature/TerrainFeatureRegistry';
 import Built from '@civ-clone/core-world/Rules/Built';
 import Effect from '@civ-clone/core-rule/Effect';
 import Player from '@civ-clone/core-player/Player';
 import PlayerWorld from '@civ-clone/core-player-world/PlayerWorld';
 import World from '@civ-clone/core-world/World';
+import balanceStarts from '../../lib/balanceStarts';
+import { instance as rngInstance } from '@civ-clone/core-random';
 import seatPlayers from '@civ-clone/base-player/lib/seatPlayers';
 
 export const getRules = (
@@ -55,7 +72,12 @@ export const getRules = (
   leaderRegistry: LeaderRegistry = leaderRegistryInstance,
   attributeRegistry: AttributeRegistry = attributeRegistryInstance,
   cityNameRegistry: CityNameRegistry = cityNameRegistryInstance,
-  traitRegistry: TraitRegistry = traitRegistryInstance
+  traitRegistry: TraitRegistry = traitRegistryInstance,
+  startTiles: StartTiles = startTilesInstance,
+  playerResearchRegistry: PlayerResearchRegistry = playerResearchRegistryInstance,
+  gameDifficultyRegistry: GameDifficultyRegistry = gameDifficultyRegistryInstance,
+  terrainFeatureRegistry: TerrainFeatureRegistry = terrainFeatureRegistryInstance,
+  randomNumberGenerator: () => number = rngInstance
 ): Built[] => [
   new Built(
     'civ2-player:world/built/register-player-worlds',
@@ -83,7 +105,19 @@ export const getRules = (
         cityNameRegistry,
         traitRegistry,
         ruleRegistry
-      ).then(() => engine.emit('game:start'));
+      ).then((): void => {
+        // Civilization II's start balancing (`lib/startBalance`), once everyone is seated and before the first turn.
+        balanceStarts(startTiles.take(), world, {
+          clientRegistry,
+          gameDifficultyRegistry,
+          playerResearchRegistry,
+          ruleRegistry,
+          terrainFeatureRegistry,
+          randomNumberGenerator,
+        });
+
+        engine.emit('game:start');
+      });
     })
   ),
   new Built(

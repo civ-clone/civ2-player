@@ -8,6 +8,10 @@ import { PlayerRegistry } from '@civ-clone/core-player/PlayerRegistry';
 import { PlayerWorldRegistry } from '@civ-clone/core-player-world/PlayerWorldRegistry';
 import { RuleRegistry } from '@civ-clone/core-rule/RuleRegistry';
 import { TraitRegistry } from '@civ-clone/core-civilization/TraitRegistry';
+import { GameDifficultyRegistry } from '@civ-clone/core-difficulty/GameDifficultyRegistry';
+import { PlayerResearchRegistry } from '@civ-clone/core-science/PlayerResearchRegistry';
+import StartTiles from '../../lib/startTiles';
+import { TerrainFeatureRegistry } from '@civ-clone/core-terrain-feature/TerrainFeatureRegistry';
 import Built from '@civ-clone/core-world/Rules/Built';
 export declare const getRules: (
   civilizationRegistry?: CivilizationRegistry,
@@ -19,6 +23,11 @@ export declare const getRules: (
   leaderRegistry?: LeaderRegistry,
   attributeRegistry?: AttributeRegistry,
   cityNameRegistry?: CityNameRegistry,
-  traitRegistry?: TraitRegistry
+  traitRegistry?: TraitRegistry,
+  startTiles?: StartTiles,
+  playerResearchRegistry?: PlayerResearchRegistry,
+  gameDifficultyRegistry?: GameDifficultyRegistry,
+  terrainFeatureRegistry?: TerrainFeatureRegistry,
+  randomNumberGenerator?: () => number
 ) => Built[];
 export default getRules;
