@@ -1,4 +1,5 @@
 import cityCaptured from './Rules/City/captured';
+import civilWar from './Rules/CivilWar/civilWar';
 import cityDestroyed from './Rules/City/destroyed';
 import playerAction from './Rules/Player/action';
 import playerAdded from './Rules/Player/added';
@@ -26,6 +27,7 @@ export const register = (game: Game): void => {
       game.clients,
       game.players
     ),
+    ...civilWar(game),
     ...cityDestroyed(
       game.cities,
       game.rules,

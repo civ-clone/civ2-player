@@ -21,6 +21,28 @@ under `civ2-player:` ids.
   game picks research (`civ2-science`'s `pickResearch`), with every civilization still counting the 1 advance it is
   placed with. If the balancing fails (a start on no land mass), the error is logged and the game starts anyway.
 
+- **Civil war** (`Rules/CivilWar/civilWar`, `lib/civilWar`, on `base-civil-war`; OpenCiv2 `city_capture_aftermath`
+  :5441-5460, `civ_civil_war` :7393): a computer player with more than 4 cities (the one taken included) splits when
+  its Palace city is taken by someone weaker: a person ranked below it by power, or, for a computer captor or the
+  barbarians, when the weakest person ranks below it (always, with no person in the game). One `CivilWar` rule each
+  (`RuleIds`). It runs first among the capture's rules, before civ2-city's plunder and civ2-city-improvement's Palace
+  escape. The rebels take the cities `RebelCities` picks: walking the land masses, the capital's stays loyal and each
+  other goes over unless the rebels already hold more; if the loyal side then holds at least as much but less than
+  twice as much, those land masses go; otherwise the cities farthest from the capital (more than 1 away, by
+  Civilization II's diagonal distance) go one by one until the rebels hold a third of the citizens. They get half the
+  gold, the government, the research toward the loser's current advance, every square the loser has seen, a war with
+  the loser (the loser the aggressor) and a last contact 8 turns ago with everyone; each side's Palace goes to its most
+  central city (`civ_find_central_city`). The loser's spaceship is lost unless its Palace escapes after all
+  (civ2-city-improvement's escape rule loses it). If no
+  civilization is left for the rebels, the loser keeps everything, loses its ship, has no Palace escape
+  (civ2-city-improvement's `barPalaceEscape`) and its most central city starts building a Palace.
+
+Not here yet (civil war): Civilization II's seven civilization numbers. The original splits a civilization only into a
+free number, one with no cities and no military units (a living one with only Settlers included, which the rebels
+replace), and compares a computer captor through the rank of the civilization numbered as the weakest person's rank;
+here a split can always add a player, and that rank is compared as a rank. The rebels' tribe isn't one of the free
+number's colour, their attitudes aren't drawn afresh, and their science and tax rates are their own rule set's start.
+
 Not here yet: the balancing's multiplayer-Deity Settlers; `advanceValue`'s unit, tribe and city terms (see
 `civ2-science`); and the advances it gives count towards the advances gained, which Civ2 doesn't count before the
 first turn.
