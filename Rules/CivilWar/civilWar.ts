@@ -37,10 +37,7 @@ import Research from '@civ-clone/core-science/Yields/Research';
 import Rule from '@civ-clone/core-rule/Rule';
 import Seceded from '@civ-clone/base-civil-war/Rules/Seceded';
 import War from '@civ-clone/base-diplomacy-declaration-war/War';
-import {
-  barPalaceEscape,
-  palaceEscape,
-} from '@civ-clone/civ2-city-improvement/lib/capital';
+import { barPalaceEscape } from '@civ-clone/civ2-city-improvement/lib/capital';
 import cancelSpaceship from '@civ-clone/base-spaceship/lib/cancelSpaceship';
 import isBarbarian from '@civ-clone/base-civilization-barbarian/isBarbarian';
 import isHuman from '@civ-clone/civ2-difficulty/isHuman';
@@ -128,31 +125,10 @@ export const getRules = (game: Game): Rule<any, any>[] => {
         //  Palace site without one; here a player can always be added, so it fails only with no civilization left.
         if (civilWar(game, loser, city) === null) {
           fail(city, loser);
-
-          return;
         }
 
-        // The loser's ship is lost unless its Palace escapes after all (`city_capture_aftermath_palace_escape`, run
-        //  next with what the war left it: civ2-city-improvement's rule, which this asks ahead of time).
-        if (
-          palaceEscape(city, loser, {
-            cityGrowthRegistry: game.cityGrowth,
-            cityImprovementRegistry: game.cityImprovements,
-            cityRegistry: game.cities,
-            clientRegistry: game.clients,
-            gameDifficultyRegistry: game.difficulty,
-            landMassRegistry: game.landMasses,
-            playerResearchRegistry: game.playerResearch,
-            playerTreasuryRegistry: game.playerTreasuries,
-            requirementRegistry: game.requirements,
-            ruleRegistry: game.rules,
-            spaceshipRegistry: game.spaceships,
-            unitRegistry: game.units,
-            wonderRegistry: game.wonders,
-          }) === null
-        ) {
-          cancelSpaceship(loser, game.spaceships);
-        }
+        // Otherwise the loser's ship is lost unless its Palace escapes after all: civ2-city-improvement's escape rule,
+        //  run next with what the war left it, loses it (`city_capture_aftermath_palace_escape` with no `city4`).
       })
     ),
 

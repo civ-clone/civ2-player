@@ -32,7 +32,8 @@ under `civ2-player:` ids.
   Civilization II's diagonal distance) go one by one until the rebels hold a third of the citizens. They get half the
   gold, the government, the research toward the loser's current advance, every square the loser has seen, a war with
   the loser (the loser the aggressor) and a last contact 8 turns ago with everyone; each side's Palace goes to its most
-  central city (`civ_find_central_city`). The loser's spaceship is lost unless its Palace escapes after all. If no
+  central city (`civ_find_central_city`). The loser's spaceship is lost unless its Palace escapes after all
+  (civ2-city-improvement's escape rule loses it). If no
   civilization is left for the rebels, the loser keeps everything, loses its ship, has no Palace escape
   (civ2-city-improvement's `barPalaceEscape`) and its most central city starts building a Palace.
 

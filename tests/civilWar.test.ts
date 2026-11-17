@@ -429,8 +429,8 @@ describe('civil war: the split', (): void => {
     expect(names(palaces)).to.include(far.name());
     expect(names(palaces)).to.include(near.name());
     expect(palaceEscapeBarred(capital)).to.equal(false);
-    // Its Palace can't escape (150 gold left), so the loser's ship is lost (`civ_spaceship_lost_notify`).
-    expect(ship.lost).to.equal(true);
+    // The ship is civ2-city-improvement's escape rule's to lose, not registered here.
+    expect(ship.lost).to.equal(false);
     expect(centralCity([near, edge])).to.equal(near);
   });
 
@@ -446,7 +446,10 @@ describe('civil war: the split', (): void => {
     expect(game.cities.getByPlayer(loser)).to.have.length(4);
   });
 
-  const withEscape = async ({ civilizationsLeft = true } = {}) => {
+  const withEscape = async ({
+    civilizationsLeft = true,
+    gold: start = 2001,
+  } = {}) => {
     const set = await setUp(),
       { city, game, gold, join } = set,
       loser = join('Reds'),
@@ -459,6 +462,7 @@ describe('civil war: the split', (): void => {
       farther = city(loser, 6, 6, 6),
       ship = Object.assign(Object.create(Spaceship.prototype), {
         lost: false,
+        losses: 0,
         player: () => loser,
         launched: () => 1,
         activeParts: () => [],
@@ -466,7 +470,8 @@ describe('civil war: the split', (): void => {
         successful(this: { lost: boolean }) {
           return this.lost ? false : null;
         },
-        lose(this: { lost: boolean }) {
+        lose(this: { lost: boolean; losses: number }) {
+          this.losses++;
           this.lost = true;
         },
       });
@@ -500,7 +505,7 @@ describe('civil war: the split', (): void => {
 
     new Palace(capital, game.rules);
     // 2001: 1001 left after the rebels' half, enough to escape with a ship (King, the level a game without one plays).
-    gold(loser).add(2001);
+    gold(loser).add(start);
     capital.capture(captor);
 
     const palaces = (): string[] =>
@@ -535,6 +540,16 @@ describe('civil war: the split', (): void => {
     expect(ship.lost).equal(false);
   });
 
+  it("loses the loser's ship once when its Palace doesn't escape after the split", async (): Promise<void> => {
+    // 1998: 999 left after the rebels' half, less than the 1000 the escape costs.
+    const { gold, loser, palaces, ship } = await withEscape({ gold: 1998 });
+
+    expect(gold(loser).value()).equal(999);
+    // The loser's Palace stays in its central city, 1,1.
+    expect(palaces().sort()).to.deep.equal(['1,1', '5,5']);
+    expect(ship.losses).equal(1);
+  });
+
   it('with no civilization left, leaves no Palace escape for civ2-city-improvement to offer', async (): Promise<void> => {
     const { gold, loser, palaces, ship } = await withEscape({
       civilizationsLeft: false,
@@ -542,6 +557,6 @@ describe('civil war: the split', (): void => {
 
     expect(palaces()).to.deep.equal([]);
     expect(gold(loser).value()).equal(2001);
-    expect(ship.lost).equal(true);
+    expect(ship.losses).equal(1);
   });
 });

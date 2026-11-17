@@ -67,27 +67,9 @@ const getRules = (game) => {
             //  Palace site without one; here a player can always be added, so it fails only with no civilization left.
             if ((0, civilWar_2.default)(game, loser, city) === null) {
                 fail(city, loser);
-                return;
             }
-            // The loser's ship is lost unless its Palace escapes after all (`city_capture_aftermath_palace_escape`, run
-            //  next with what the war left it: civ2-city-improvement's rule, which this asks ahead of time).
-            if ((0, capital_1.palaceEscape)(city, loser, {
-                cityGrowthRegistry: game.cityGrowth,
-                cityImprovementRegistry: game.cityImprovements,
-                cityRegistry: game.cities,
-                clientRegistry: game.clients,
-                gameDifficultyRegistry: game.difficulty,
-                landMassRegistry: game.landMasses,
-                playerResearchRegistry: game.playerResearch,
-                playerTreasuryRegistry: game.playerTreasuries,
-                requirementRegistry: game.requirements,
-                ruleRegistry: game.rules,
-                spaceshipRegistry: game.spaceships,
-                unitRegistry: game.units,
-                wonderRegistry: game.wonders,
-            }) === null) {
-                (0, cancelSpaceship_1.default)(loser, game.spaceships);
-            }
+            // Otherwise the loser's ship is lost unless its Palace escapes after all: civ2-city-improvement's escape rule,
+            //  run next with what the war left it, loses it (`city_capture_aftermath_palace_escape` with no `city4`).
         })),
         // What the rebels take besides their cities (`civ_civil_war`, civ.cpp:7468-7500): half the gold, rounded down…
         new Seceded_1.default('civ2-player:civil-war/seceded/gold', new Effect_1.default((rebels, loser) => {
