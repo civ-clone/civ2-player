@@ -37,6 +37,7 @@ import { expect } from 'chai';
 import { palaceEscapeBarred } from '@civ-clone/civ2-city-improvement/lib/capital';
 import civilWarRules from '../Rules/CivilWar/civilWar';
 import improvementCreated from '@civ-clone/civ2-city-improvement/Rules/CityImprovement/created';
+import palaceCaptured from '@civ-clone/civ2-city-improvement/Rules/City/captured';
 
 // Toy civilizations, one for each colour set, with a leader each.
 const colours: [string, number][] = [
@@ -261,6 +262,19 @@ describe('civil war: the trigger (city_capture_aftermath :5441-5460)', (): void 
     gold(person).add(32 * 200);
     expect(isWeaker(game, capital, captor, loser)).to.equal(false);
   });
+
+  it('with no person, any loser, however many players rank above it (more than 7 here, ranked 0 and below)', async (): Promise<void> => {
+    const { capital, captor, game, gold, join, loser } = await fiveCities();
+
+    ['Yellows', 'Greens', 'Blues', 'Indigos', 'Violets', 'Pinks'].forEach(
+      (name) => gold(join(name)).add(32 * 1000)
+    );
+    gold(captor).add(32 * 1000);
+
+    // 8 players, the Reds the weakest: rank 0.
+    expect(game.players.entries()).length(8);
+    expect(isWeaker(game, capital, captor, loser)).to.equal(true);
+  });
 });
 
 describe('civil war: the rebel cities (civ_civil_war :7503-7563)', (): void => {
@@ -415,7 +429,7 @@ describe('civil war: the split', (): void => {
     expect(names(palaces)).to.include(far.name());
     expect(names(palaces)).to.include(near.name());
     expect(palaceEscapeBarred(capital)).to.equal(false);
-    // Its Palace can't escape (on the easiest level), so the loser's ship is lost (`civ_spaceship_lost_notify`).
+    // Its Palace can't escape (150 gold left), so the loser's ship is lost (`civ_spaceship_lost_notify`).
     expect(ship.lost).to.equal(true);
     expect(centralCity([near, edge])).to.equal(near);
   });
@@ -430,5 +444,104 @@ describe('civil war: the split', (): void => {
     expect(log).to.deep.equal([]);
     expect(palaceEscapeBarred(capital)).to.equal(true);
     expect(game.cities.getByPlayer(loser)).to.have.length(4);
+  });
+
+  const withEscape = async ({ civilizationsLeft = true } = {}) => {
+    const set = await setUp(),
+      { city, game, gold, join } = set,
+      loser = join('Reds'),
+      captor = join('Oranges'),
+      capital = city(loser, 0, 0, 10),
+      // Kept by the loser: the most central (registered first, on a tie) and the escape's city (size 8 or more).
+      edge = city(loser, 1, 1, 1),
+      near = city(loser, 2, 0, 8),
+      far = city(loser, 5, 5, 6),
+      farther = city(loser, 6, 6, 6),
+      ship = Object.assign(Object.create(Spaceship.prototype), {
+        lost: false,
+        player: () => loser,
+        launched: () => 1,
+        activeParts: () => [],
+        inactiveParts: () => [],
+        successful(this: { lost: boolean }) {
+          return this.lost ? false : null;
+        },
+        lose(this: { lost: boolean }) {
+          this.lost = true;
+        },
+      });
+
+    game.spaceships.register(ship);
+    // civ2-city-improvement's capture rules, after this package's.
+    game.rules.register(
+      ...palaceCaptured(
+        {
+          cityGrowthRegistry: game.cityGrowth,
+          cityImprovementRegistry: game.cityImprovements,
+          cityRegistry: game.cities,
+          clientRegistry: game.clients,
+          gameDifficultyRegistry: game.difficulty,
+          landMassRegistry: game.landMasses,
+          playerResearchRegistry: game.playerResearch,
+          playerTreasuryRegistry: game.playerTreasuries,
+          requirementRegistry: game.requirements,
+          ruleRegistry: game.rules,
+          spaceshipRegistry: game.spaceships,
+          unitRegistry: game.units,
+          wonderRegistry: game.wonders,
+        } as any,
+        () => 0.9
+      )
+    );
+
+    if (!civilizationsLeft) {
+      game.civilizations.unregister(...game.civilizations.entries());
+    }
+
+    new Palace(capital, game.rules);
+    // 2001: 1001 left after the rebels' half, enough to escape with a ship (King, the level a game without one plays).
+    gold(loser).add(2001);
+    capital.capture(captor);
+
+    const palaces = (): string[] =>
+      names(
+        game.cityImprovements.getByType(Palace).map((palace) => palace.city())
+      );
+
+    return {
+      capital,
+      edge,
+      far,
+      farther,
+      game,
+      gold,
+      loser,
+      near,
+      palaces,
+      ship,
+    };
+  };
+
+  it("runs before civ2-city-improvement's Palace escape, which then moves the loser's Palace and keeps its ship", async (): Promise<void> => {
+    const { far, farther, gold, loser, near, palaces, ship } =
+      await withEscape();
+
+    expect(far.player()).not.equal(loser);
+    expect(farther.player()).not.equal(loser);
+    // The rebels' Palace in 5,5; the loser's moved from 1,1 (its central city) to 2,0 for 1000 gold.
+    expect(palaces().sort()).to.deep.equal(['2,0', '5,5']);
+    expect(near.player()).equal(loser);
+    expect(gold(loser).value()).equal(1);
+    expect(ship.lost).equal(false);
+  });
+
+  it('with no civilization left, leaves no Palace escape for civ2-city-improvement to offer', async (): Promise<void> => {
+    const { gold, loser, palaces, ship } = await withEscape({
+      civilizationsLeft: false,
+    });
+
+    expect(palaces()).to.deep.equal([]);
+    expect(gold(loser).value()).equal(2001);
+    expect(ship.lost).equal(true);
   });
 });

@@ -96,6 +96,16 @@ export const isWeaker = (
     return (ranks.get(captor) ?? 0) < loserRank;
   }
 
+  // With no person, the original compares the barbarians' rank, 0, which every civilization's beats (its ranks run 1 to
+  //  7); here a game can have more than 7, ranked 0 and below, so no person means yes.
+  if (
+    ![...ranks.keys()].some((player: Player): boolean =>
+      isHuman(player, game.clients)
+    )
+  ) {
+    return true;
+  }
+
   return worstHumanRank(game, ranks) < loserRank;
 };
 
