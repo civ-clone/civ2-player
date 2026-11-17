@@ -68,7 +68,7 @@
     "@civ-clone/base-terrain-yield-trade": "^0.1.0",
     "@civ-clone/base-unit-settlers": "^0.1.0",
     "@civ-clone/civ2-city": "github:civ-clone/civ2-city",
-    "@civ-clone/civ2-city-improvement": "github:civ-clone/civ2-city-improvement#feat/m2e",
+    "@civ-clone/civ2-city-improvement": "github:civ-clone/civ2-city-improvement",
     "@civ-clone/civ2-difficulty": "github:civ-clone/civ2-difficulty",
     "@civ-clone/civ2-diplomacy": "github:civ-clone/civ2-diplomacy",
     "@civ-clone/civ2-science": "github:civ-clone/civ2-science",
