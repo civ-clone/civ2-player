@@ -2,6 +2,7 @@
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.register = void 0;
 const captured_1 = require("./Rules/City/captured");
+const civilWar_1 = require("./Rules/CivilWar/civilWar");
 const destroyed_1 = require("./Rules/City/destroyed");
 const action_1 = require("./Rules/Player/action");
 const added_1 = require("./Rules/Player/added");
@@ -19,7 +20,7 @@ const core_game_1 = require("@civ-clone/core-game");
 const startTiles_1 = require("./lib/startTiles");
 const register = (game) => {
     const startTiles = new startTiles_1.default();
-    game.rules.register(...(0, captured_1.default)(game.cities, game.rules, game.units, game.clients, game.players), ...(0, destroyed_1.default)(game.cities, game.rules, game.units, game.clients, game.players), ...(0, action_1.default)(), ...(0, added_1.default)(game.engine), ...(0, defeated_1.default)(game.currentPlayers, game.players, game.rules, game.units, game.engine), ...(0, spawn_1.default)(game.rules, startTiles), ...(0, turn_start_1.default)(game.rules, game.cities, game.units), ...(0, visibility_changed_1.default)(game.engine), ...(0, built_1.default)(game.players, game.playerWorlds), ...(0, pillaged_1.default)(game.players, game.playerWorlds), ...(0, removed_1.default)(game.players, game.playerWorlds), ...(0, destroyed_2.default)(game.cities, game.rules, game.units, game.clients, game.players), ...(0, visibility_1.default)(game.playerWorlds), ...(0, built_2.default)(game.civilizations, game.clients, game.engine, game.players, game.playerWorlds, game.rules, game.leaders, game.attributes, game.cityNames, game.traits, startTiles, game.playerResearch, game.difficulty, game.terrainFeatures, game.rng));
+    game.rules.register(...(0, captured_1.default)(game.cities, game.rules, game.units, game.clients, game.players), ...(0, civilWar_1.default)(game), ...(0, destroyed_1.default)(game.cities, game.rules, game.units, game.clients, game.players), ...(0, action_1.default)(), ...(0, added_1.default)(game.engine), ...(0, defeated_1.default)(game.currentPlayers, game.players, game.rules, game.units, game.engine), ...(0, spawn_1.default)(game.rules, startTiles), ...(0, turn_start_1.default)(game.rules, game.cities, game.units), ...(0, visibility_changed_1.default)(game.engine), ...(0, built_1.default)(game.players, game.playerWorlds), ...(0, pillaged_1.default)(game.players, game.playerWorlds), ...(0, removed_1.default)(game.players, game.playerWorlds), ...(0, destroyed_2.default)(game.cities, game.rules, game.units, game.clients, game.players), ...(0, visibility_1.default)(game.playerWorlds), ...(0, built_2.default)(game.civilizations, game.clients, game.engine, game.players, game.playerWorlds, game.rules, game.leaders, game.attributes, game.cityNames, game.traits, startTiles, game.playerResearch, game.difficulty, game.terrainFeatures, game.rng));
 };
 exports.register = register;
 // The plugin loader imports each package for this side effect. Until it passes
