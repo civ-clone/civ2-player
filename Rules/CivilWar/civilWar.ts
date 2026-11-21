@@ -23,6 +23,7 @@ import Captured from '@civ-clone/core-city/Rules/Captured';
 import City from '@civ-clone/core-city/City';
 import CivilWar from '@civ-clone/base-civil-war/Rules/CivilWar';
 import Criterion from '@civ-clone/core-rule/Criterion';
+import Description from '@civ-clone/core-rule/Description';
 import Effect from '@civ-clone/core-rule/Effect';
 import { Game } from '@civ-clone/core-game';
 import Gold from '@civ-clone/base-city-yield-gold/Gold';
@@ -129,7 +130,9 @@ export const getRules = (game: Game): Rule<any, any>[] => {
 
         // Otherwise the loser's ship is lost unless its Palace escapes after all: civ2-city-improvement's escape rule,
         //  run next with what the war left it, loses it (`city_capture_aftermath_palace_escape` with no `city4`).
-      })
+      }),
+      // Its conditions (a computer player's capital, more than 4 cities, a weaker captor) are the `CivilWar` rules'.
+      new Description({ type: 'civil_war', subject: Palace })
     ),
 
     // What the rebels take besides their cities (`civ_civil_war`, civ.cpp:7468-7500): half the gold, rounded down…

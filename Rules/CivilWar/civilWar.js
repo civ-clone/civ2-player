@@ -8,6 +8,7 @@ const civilWar_2 = require("@civ-clone/base-civil-war/lib/civilWar");
 const Captured_1 = require("@civ-clone/core-city/Rules/Captured");
 const CivilWar_1 = require("@civ-clone/base-civil-war/Rules/CivilWar");
 const Criterion_1 = require("@civ-clone/core-rule/Criterion");
+const Description_1 = require("@civ-clone/core-rule/Description");
 const Effect_1 = require("@civ-clone/core-rule/Effect");
 const Gold_1 = require("@civ-clone/base-city-yield-gold/Gold");
 const Never_1 = require("@civ-clone/core-diplomacy/Expiries/Never");
@@ -70,7 +71,9 @@ const getRules = (game) => {
             }
             // Otherwise the loser's ship is lost unless its Palace escapes after all: civ2-city-improvement's escape rule,
             //  run next with what the war left it, loses it (`city_capture_aftermath_palace_escape` with no `city4`).
-        })),
+        }), 
+        // Its conditions (a computer player's capital, more than 4 cities, a weaker captor) are the `CivilWar` rules'.
+        new Description_1.default({ type: 'civil_war', subject: CityImprovements_1.Palace })),
         // What the rebels take besides their cities (`civ_civil_war`, civ.cpp:7468-7500): half the gold, rounded down…
         new Seceded_1.default('civ2-player:civil-war/seceded/gold', new Effect_1.default((rebels, loser) => {
             var _a, _b;
